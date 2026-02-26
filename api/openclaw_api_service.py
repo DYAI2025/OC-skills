@@ -1,0 +1,367 @@
+#!/usr/bin/env python3
+"""
+OpenClawMD Skill Generator API Service
+
+REST API for generating OpenClaw-compatible skills.
+Used by openclawmd.com website.
+
+Usage:
+    python3 openclaw_api_service.py
+
+Endpoints:
+    GET  /                    - Health check
+    GET  /skills/templates    - List available skill templates
+    POST /skills/generate     - Generate a new skill
+    GET  /skills/download/:id - Download generated skill ZIP
+"""
+
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+import zipfile
+import io
+import json
+import os
+import hashlib
+from datetime import datetime
+from pathlib import Path
+
+app = Flask(__name__)
+CORS(app)  # Enable CORS for web frontend
+
+# In-memory storage for generated skills (use Redis/DB in production)
+GENERATED_SKILLS = {}
+
+# Skill templates
+SKILL_TEMPLATES = {
+    'build-exact': {
+        'name': 'Build:Exact',
+        'description': 'Complete development framework: Brainstorm → Plan → Execute',
+        'pattern': 'protocol',
+        'category': 'development'
+    },
+    'consistency-checker': {
+        'name': 'Consistency Checker',
+        'description': 'Auto-check for skill compatibility and documentation drift',
+        'pattern': 'python-script',
+        'category': 'tools'
+    },
+    'multi-agent-diagnose': {
+        'name': 'Multi-Agent Diagnose',
+        'description': 'DRA-based diagnosis for multi-agent skill stacks',
+        'pattern': 'protocol',
+        'category': 'diagnosis'
+    },
+    'rtk-integration': {
+        'name': 'RTK Token Killer',
+        'description': 'Wrapper for RTK CLI to optimize token usage',
+        'pattern': 'cli-wrapper',
+        'category': 'optimization'
+    }
+}
+
+
+def generate_skill_id(skill_data: dict) -> str:
+    """Generate unique skill ID from content"""
+    content = f"{skill_data['slug']}-{skill_data['version']}-{datetime.now().isoformat()}"
+    return hashlib.md5(content.encode()).hexdigest()[:12]
+
+
+def create_skill_zip(skill_data: dict) -> io.BytesIO:
+    """Create ZIP archive with skill files"""
+    buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        # SKILL.md
+        skill_md = generate_skill_md(skill_data)
+        zip_file.writestr('SKILL.md', skill_md)
+        
+        # _meta.json
+        meta_json = {
+            'ownerId': skill_data['ownerId'],
+            'slug': skill_data['slug'],
+            'version': skill_data['version'],
+            'publishedAt': datetime.now().isoformat(),
+            'pattern': skill_data['pattern'],
+            'compatibility': skill_data.get('compatibility', ['claude', 'opencode', 'gemini', 'codex', 'qwen'])
+        }
+        zip_file.writestr('_meta.json', json.dumps(meta_json, indent=2))
+        
+        # scripts/ (for python-script and cli-wrapper patterns)
+        if skill_data['pattern'] in ['python-script', 'cli-wrapper']:
+            script_content = generate_script_content(skill_data)
+            if script_content:
+                script_name = skill_data.get('script_name', skill_data['slug'].replace('-', '_'))
+                zip_file.writestr(f'scripts/{script_name}.py', script_content)
+        
+        # README.md
+        readme = generate_readme(skill_data)
+        zip_file.writestr('README.md', readme)
+    
+    buffer.seek(0)
+    return buffer
+
+
+def generate_skill_md(data: dict) -> str:
+    """Generate SKILL.md content"""
+    frontmatter = f"""---
+name: {data['slug']}
+description: {data['description']}
+compatibility: {', '.join(data.get('compatibility', ['claude', 'opencode', 'gemini', 'codex', 'qwen']))}
+version: {data['version']}
+author: {data.get('author', 'OpenClawMD User')}
+pattern: {data['pattern']}
+---
+
+# {data['name']}
+
+{data.get('long_description', data['description'])}
+
+## Usage
+
+"""
+    
+    # Pattern-specific usage
+    if data['pattern'] == 'cli-wrapper':
+        usage = f"""```bash
+# Install required binaries
+{data.get('install_steps', '# Install steps not provided')}
+
+# Use the CLI
+{data['slug']} --help
+```
+"""
+    elif data['pattern'] == 'python-script':
+        script_name = data.get('script_name', data['slug'].replace('-', '_'))
+        usage = f"""```bash
+# Run the script
+python3 {{{{baseDir}}}}/scripts/{script_name}.py --help
+```
+"""
+    else:  # protocol
+        usage = f"""```markdown
+Follow the workflow defined in this skill.
+```
+"""
+    
+    # Examples
+    examples = "\n## Examples\n\n"
+    for i, example in enumerate(data.get('examples', []), 1):
+        examples += f"### Example {i}\n\n{example}\n\n"
+    
+    return frontmatter + usage + examples
+
+
+def generate_script_content(data: dict) -> str:
+    """Generate script content for python-script pattern"""
+    script_name = data.get('script_name', data['slug'].replace('-', '_'))
+    
+    return f'''#!/usr/bin/env python3
+"""
+{data['name']} - {data['description']}
+
+Generated by OpenClawMD Skill Generator
+"""
+
+import sys
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser(description="{data['description']}")
+    parser.add_argument('--version', action='version', version='{data['slug']} {data['version']}')
+    args = parser.parse_args()
+    
+    # TODO: Implement your script logic here
+    print("Hello from {data['slug']}!")
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
+'''
+
+
+def generate_readme(data: dict) -> str:
+    """Generate README.md content"""
+    return f"""# {data['name']}
+
+{data['description']}
+
+## Installation
+
+""" + (f"""```bash
+{data.get('install_steps', '# Install steps not provided')}
+```
+""" if data['pattern'] == 'cli-wrapper' else """This skill is ready to use. Copy to your agent's skills directory.
+""") + f"""
+
+## Version
+
+{data['version']}
+
+## Generated by
+
+[OpenClawMD Skill Generator](https://openclawmd.com)
+
+## License
+
+MIT
+"""
+
+
+@app.route('/')
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'OpenClawMD Skill Generator API',
+        'version': '1.0.0',
+        'endpoints': [
+            'GET  /',
+            'GET  /skills/templates',
+            'POST /skills/generate',
+            'GET  /skills/download/:id'
+        ]
+    })
+
+
+@app.route('/skills/templates', methods=['GET'])
+def list_templates():
+    """List available skill templates"""
+    return jsonify({
+        'templates': SKILL_TEMPLATES,
+        'patterns': ['cli-wrapper', 'python-script', 'protocol'],
+        'categories': ['development', 'tools', 'diagnosis', 'optimization', 'collaboration']
+    })
+
+
+@app.route('/skills/generate', methods=['POST'])
+def generate():
+    """Generate a new skill"""
+    try:
+        data = request.json
+        
+        # Validate required fields
+        required = ['name', 'slug', 'description', 'pattern', 'ownerId']
+        missing = [field for field in required if not data.get(field)]
+        
+        if missing:
+            return jsonify({
+                'success': False,
+                'error': f'Missing required fields: {", ".join(missing)}',
+                'missing_fields': missing
+            }), 400
+        
+        # Validate pattern
+        if data['pattern'] not in ['cli-wrapper', 'python-script', 'protocol']:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid pattern: {data["pattern"]}. Must be one of: cli-wrapper, python-script, protocol'
+            }), 400
+        
+        # Generate skill
+        skill_data = {
+            'name': data['name'],
+            'slug': data['slug'],
+            'version': data.get('version', '1.0.0'),
+            'description': data['description'],
+            'pattern': data['pattern'],
+            'ownerId': data['ownerId'],
+            'author': data.get('author', 'OpenClawMD User'),
+            'compatibility': data.get('compatibility'),
+            'long_description': data.get('long_description', data['description']),
+            'script_name': data.get('script_name'),
+            'install_steps': data.get('install_steps'),
+            'examples': data.get('examples', [])
+        }
+        
+        # Generate unique ID
+        skill_id = generate_skill_id(skill_data)
+        
+        # Create ZIP
+        zip_buffer = create_skill_zip(skill_data)
+        
+        # Store for download
+        GENERATED_SKILLS[skill_id] = {
+            'data': skill_data,
+            'zip': zip_buffer.getvalue(),
+            'created_at': datetime.now().isoformat()
+        }
+        
+        # Return response
+        return jsonify({
+            'success': True,
+            'skill_id': skill_id,
+            'download_url': f'/skills/download/{skill_id}',
+            'preview': {
+                'name': skill_data['name'],
+                'slug': skill_data['slug'],
+                'version': skill_data['version'],
+                'pattern': skill_data['pattern']
+            },
+            'spec_prompt': generate_spec_prompt(skill_data)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/skills/download/<skill_id>', methods=['GET'])
+def download(skill_id):
+    """Download generated skill ZIP"""
+    if skill_id not in GENERATED_SKILLS:
+        return jsonify({
+            'success': False,
+            'error': 'Skill not found. It may have expired.'
+        }), 404
+    
+    skill = GENERATED_SKILLS[skill_id]
+    filename = f"{skill['data']['slug']}-{skill['data']['version']}.zip"
+    
+    return send_file(
+        io.BytesIO(skill['zip']),
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+def generate_spec_prompt(data: dict) -> str:
+    """Generate OpenClaw-compatible SPEC prompt"""
+    lines = [
+        f"name: {data['slug']}",
+        f"slug: {data['slug']}",
+        f"version: {data['version']}",
+        f"description: {data['description']}",
+        f"ownerId: {data['ownerId']}",
+    ]
+    
+    if data.get('author'):
+        lines.append(f"author: {data['author']}")
+    
+    if data['pattern'] == 'cli-wrapper' and data.get('install_steps'):
+        lines.append(f"install: {data['install_steps']}")
+    
+    if data['pattern'] == 'python-script':
+        lines.append("bins: python3")
+        if data.get('script_name'):
+            lines.append(f"script_name: {data['script_name']}")
+    
+    spec_prompt = '\n'.join(lines) + '\n\nLong Description\n\n'
+    spec_prompt += data.get('long_description', data['description'])
+    
+    return spec_prompt
+
+
+if __name__ == '__main__':
+    print("🚀 OpenClawMD Skill Generator API")
+    print("Starting server on http://localhost:5000")
+    print("\nEndpoints:")
+    print("  GET  /                    - Health check")
+    print("  GET  /skills/templates    - List templates")
+    print("  POST /skills/generate     - Generate skill")
+    print("  GET  /skills/download/:id - Download ZIP")
+    print("\nPress Ctrl+C to stop")
+    
+    app.run(host='0.0.0.0', port=5000, debug=True)
