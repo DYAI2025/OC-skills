@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClawMD - Skill Library</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    h1 {
+      color: #667eea;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 1.2em;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 2.5em;
+      font-weight: bold;
+    }
+    
+    .stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+    
+    .search-bar {
+      margin-bottom: 30px;
+    }
+    
+    .search-bar input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+    
+    .filter-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-tab {
+      padding: 10px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: white;
+    }
+    
+    .filter-tab:hover,
+    .filter-tab.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+    
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    
+    .skill-card {
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.3s;
+      background: white;
+    }
+    
+    .skill-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .skill-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 15px;
+    }
+    
+    .skill-name {
+      font-size: 1.3em;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .skill-pattern {
+      padding: 5px 12px;
+      border-radius: 15px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+    
+    .pattern-protocol { background: #dbeafe; color: #1e40af; }
+    .pattern-python-script { background: #dcf7e3; color: #1e7f3b; }
+    .pattern-cli-wrapper { background: #fef3c7; color: #92400e; }
+    
+    .skill-description {
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    
+    .skill-meta {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      font-size: 0.85em;
+      color: #888;
+    }
+    
+    .download-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 10px 25px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .section-title {
+      font-size: 1.8em;
+      color: #333;
+      margin: 40px 0 20px 0;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+    }
+    
+    .generator-cta {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 8px;
+      text-align: center;
+      margin-top: 40px;
+    }
+    
+    .generator-cta h2 {
+      margin-bottom: 15px;
+    }
+    
+    .generator-cta a {
+      display: inline-block;
+      background: white;
+      color: #f5576c;
+      padding: 12px 30px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🛠️ OpenClawMD Skill Library</h1>
+      <p class="subtitle">Curated collection of AI agent skills</p>
+    </header>
+    
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="total-skills">0</div>
+        <div class="stat-label">Total Skills</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-protocols">0</div>
+        <div class="stat-label">Protocols</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-python">0</div>
+        <div class="stat-label">Python Scripts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-cli">0</div>
+        <div class="stat-label">CLI Wrappers</div>
+      </div>
+    </div>
+    
+    <div class="search-bar">
+      <input type="text" id="search" placeholder="🔍 Search skills by name or description...">
+    </div>
+    
+    <div class="filter-tabs">
+      <div class="filter-tab active" data-filter="all">All Skills</div>
+      <div class="filter-tab" data-filter="protocol">📋 Protocols</div>
+      <div class="filter-tab" data-filter="python-script">🐍 Python</div>
+      <div class="filter-tab" data-filter="cli-wrapper">🖥️ CLI</div>
+    </div>
+    
+    <h2 class="section-title">Featured Skills</h2>
+    
+    <div class="skills-grid" id="skills-grid">
+      <!-- Skills will be loaded here -->
+    </div>
+    
+    <div class="generator-cta">
+      <h2>🚀 Can't Find What You Need?</h2>
+      <p>Create your own custom skill in seconds with our AI-powered generator</p>
+      <a href="/generate">Start Creating →</a>
+    </div>
+  </div>
+  
+  <script>
+    // Skill data (would be loaded from manifest.json in production)
+    const skills = [
+      {
+        name: 'Build:Exact',
+        slug: 'build-exact',
+        description: 'Complete development framework: Brainstorm → Plan → Execute in one unified process',
+        pattern: 'protocol',
+        author: 'OpenClawMD (based on Claude Superpowers)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Consistency Checker',
+        slug: 'consistency-checker',
+        description: 'Auto-check for skill compatibility and documentation drift',
+        pattern: 'python-script',
+        author: 'OpenClawMD',
+        version: '1.0.0'
+      },
+      {
+        name: 'Multi-Agent Diagnose',
+        slug: 'multi-agent-diagnose',
+        description: 'DRA-based diagnosis for multi-agent skill stacks',
+        pattern: 'protocol',
+        author: 'Qwen (based on FlashDocs)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Error Diagnostics',
+        slug: 'error-diagnostics-error-trace',
+        description: 'Systematic error diagnosis and debugging workflow',
+        pattern: 'protocol',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Find Bugs',
+        slug: 'find-bugs',
+        description: 'Automated bug detection and analysis',
+        pattern: 'protocol',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Codebase Cleanup',
+        slug: 'codebase-cleanup-tech-debt',
+        description: 'Technical debt identification and reduction',
+        pattern: 'protocol',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Dependency Audit',
+        slug: 'dependency-management-deps-audit',
+        description: 'Audit and manage project dependencies',
+        pattern: 'cli-wrapper',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Azure Functions',
+        slug: 'azure-functions',
+        description: 'Deploy and manage Azure Functions',
+        pattern: 'cli-wrapper',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'GitHub Workflow Automation',
+        slug: 'github-workflow-automation',
+        description: 'Automate GitHub Actions workflows',
+        pattern: 'protocol',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Autonomous Agent Patterns',
+        slug: 'autonomous-agent-patterns',
+        description: 'Design patterns for autonomous AI agents',
+        pattern: 'protocol',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'React State Management',
+        slug: 'react-state-management',
+        description: 'State management patterns for React applications',
+        pattern: 'protocol',
+        author: 'Antigravity (imported)',
+        version: '1.0.0'
+      },
+      {
+        name: 'Writing Plans',
+        slug: 'writing-plans',
+        description: 'Create detailed implementation plans with bite-sized tasks',
+        pattern: 'protocol',
+        author: 'Claude Superpowers',
+        version: '2.1.0'
+      },
+      {
+        name: 'Executing Plans',
+        slug: 'executing-plans',
+        description: 'Execute detailed plans in batches with review checkpoints',
+        pattern: 'protocol',
+        author: 'Claude Superpowers',
+        version: '2.2.0'
+      },
+      {
+        name: 'Skill Creator',
+        slug: 'skill-creator',
+        description: 'Create new skills using structured workflow',
+        pattern: 'protocol',
+        author: 'SkillKit',
+        version: '1.0.0'
+      }
+    ];
+    
+    // Render skills
+    function renderSkills(filter = 'all', search = '') {
+      const grid = document.getElementById('skills-grid');
+      grid.innerHTML = '';
+      
+      let filtered = skills.filter(skill => {
+        const matchesFilter = filter === 'all' || skill.pattern === filter;
+        const matchesSearch = search === '' || 
+          skill.name.toLowerCase().includes(search.toLowerCase()) ||
+          skill.description.toLowerCase().includes(search.toLowerCase());
+        return matchesFilter && matchesSearch;
+      });
+      
+      filtered.forEach(skill => {
+        const card = document.createElement('div');
+        card.className = 'skill-card';
+        card.innerHTML = `
+          <div class="skill-header">
+            <div class="skill-name">${skill.name}</div>
+            <span class="skill-pattern pattern-${skill.pattern}">${skill.pattern.replace('-', ' ')}</span>
+          </div>
+          <div class="skill-description">${skill.description}</div>
+          <div class="skill-meta">
+            <span>👤 ${skill.author}</span>
+            <span>📦 v${skill.version}</span>
+          </div>
+          <a href="/download/${skill.slug}.zip" class="download-btn">📥 Download</a>
+        `;
+        grid.appendChild(card);
+      });
+      
+      // Update stats
+      updateStats();
+    }
+    
+    function updateStats() {
+      document.getElementById('total-skills').textContent = skills.length;
+      document.getElementById('total-protocols').textContent = skills.filter(s => s.pattern === 'protocol').length;
+      document.getElementById('total-python').textContent = skills.filter(s => s.pattern === 'python-script').length;
+      document.getElementById('total-cli').textContent = skills.filter(s => s.pattern === 'cli-wrapper').length;
+    }
+    
+    // Event listeners
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderSkills(tab.dataset.filter, document.getElementById('search').value);
+      });
+    });
+    
+    document.getElementById('search').addEventListener('input', (e) => {
+      renderSkills(document.querySelector('.filter-tab.active').dataset.filter, e.target.value);
+    });
+    
+    // Initial render
+    renderSkills();
+  </script>
+</body>
+</html>

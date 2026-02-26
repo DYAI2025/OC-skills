@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClawMD - Skill Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+    
+    .form-group {
+      margin-bottom: 25px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1em;
+      transition: border-color 0.3s;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    
+    .pattern-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .pattern-option {
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .pattern-option:hover {
+      border-color: #667eea;
+      background: #f5f3ff;
+    }
+    
+    .pattern-option.selected {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+    
+    .pattern-option h3 {
+      font-size: 1.1em;
+      margin-bottom: 5px;
+    }
+    
+    .pattern-option p {
+      font-size: 0.85em;
+      opacity: 0.8;
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 8px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+      width: 100%;
+      margin-top: 20px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .result {
+      margin-top: 30px;
+      padding: 25px;
+      background: #f0fdf4;
+      border: 2px solid #22c55e;
+      border-radius: 8px;
+      display: none;
+    }
+    
+    .result h2 {
+      color: #16a34a;
+      margin-bottom: 15px;
+    }
+    
+    .download-btn {
+      display: inline-block;
+      background: #22c55e;
+      color: white;
+      padding: 12px 30px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 15px;
+      transition: background 0.3s;
+    }
+    
+    .download-btn:hover {
+      background: #16a34a;
+    }
+    
+    .spec-preview {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      margin-top: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .error {
+      background: #fef2f2;
+      border: 2px solid #ef4444;
+      color: #dc2626;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      display: none;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .field-hint {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .pattern-fields {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛠️ OpenClawMD</h1>
+    <p class="subtitle">Generate AI agent skills in seconds</p>
+    
+    <form id="skill-form">
+      <!-- Basic Info -->
+      <div class="form-group">
+        <label for="name">Skill Name *</label>
+        <input type="text" id="name" name="name" placeholder="e.g., Consistency Checker" required>
+        <div class="field-hint">Display name for your skill</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="slug">Skill Slug *</label>
+        <input type="text" id="slug" name="slug" placeholder="e.g., consistency-checker" required pattern="[a-z0-9-]+">
+        <div class="field-hint">URL-friendly identifier (lowercase, hyphens only)</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Description *</label>
+        <textarea id="description" name="description" placeholder="What does your skill do?" required></textarea>
+        <div class="field-hint">One sentence describing the skill's purpose</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="long_description">Long Description</label>
+        <textarea id="long_description" name="long_description" placeholder="Detailed description of your skill's functionality..."></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="ownerId">Owner ID *</label>
+        <input type="text" id="ownerId" name="ownerId" placeholder="e.g., my-team or your-name" required>
+        <div class="field-hint">Your identifier or team name</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="author">Author</label>
+        <input type="text" id="author" name="author" placeholder="e.g., John Doe">
+      </div>
+      
+      <div class="form-group">
+        <label for="version">Version</label>
+        <input type="text" id="version" name="version" placeholder="1.0.0" value="1.0.0">
+      </div>
+      
+      <!-- Pattern Selection -->
+      <div class="form-group">
+        <label>Pattern Type *</label>
+        <div class="pattern-options">
+          <div class="pattern-option" data-pattern="cli-wrapper">
+            <h3>🖥️ CLI Wrapper</h3>
+            <p>Wrap existing CLI tools</p>
+          </div>
+          <div class="pattern-option" data-pattern="python-script">
+            <h3>🐍 Python Script</h3>
+            <p>Custom Python automation</p>
+          </div>
+          <div class="pattern-option" data-pattern="protocol">
+            <h3>📋 Protocol</h3>
+            <p>Workflow or process</p>
+          </div>
+        </div>
+        <input type="hidden" id="pattern" name="pattern" required>
+      </div>
+      
+      <!-- Pattern-Specific Fields -->
+      <div id="cli-wrapper-fields" class="pattern-fields">
+        <div class="form-group">
+          <label for="install_steps">Install Steps</label>
+          <textarea id="install_steps" name="install_steps" placeholder="kind=brew,bins=tool,label=Install Tool"></textarea>
+          <div class="field-hint">Semicolon-separated install steps (key=value pairs)</div>
+        </div>
+      </div>
+      
+      <div id="python-script-fields" class="pattern-fields">
+        <div class="form-group">
+          <label for="script_name">Script Name</label>
+          <input type="text" id="script_name" name="script_name" placeholder="e.g., my_script">
+          <div class="field-hint">Name for the Python script (without .py)</div>
+        </div>
+      </div>
+      
+      <!-- Examples -->
+      <div class="form-group">
+        <label for="examples">Examples (optional)</label>
+        <textarea id="examples" name="examples" placeholder="Example 1: How to use your skill..."></textarea>
+        <div class="field-hint">One example per line</div>
+      </div>
+      
+      <!-- Submit -->
+      <button type="submit" class="btn" id="submit-btn">
+        ✨ Generate Skill
+      </button>
+    </form>
+    
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Generating your skill...</p>
+    </div>
+    
+    <!-- Error -->
+    <div class="error" id="error"></div>
+    
+    <!-- Result -->
+    <div class="result" id="result">
+      <h2>✅ Skill Generated!</h2>
+      <p><strong>Name:</strong> <span id="result-name"></span></p>
+      <p><strong>Slug:</strong> <span id="result-slug"></span></p>
+      <p><strong>Version:</strong> <span id="result-version"></span></p>
+      <p><strong>Pattern:</strong> <span id="result-pattern"></span></p>
+      
+      <a href="#" class="download-btn" id="download-link" download>
+        📦 Download ZIP
+      </a>
+      
+      <h3 style="margin-top: 25px; margin-bottom: 10px;">SPEC Preview:</h3>
+      <pre class="spec-preview" id="spec-preview"></pre>
+    </div>
+  </div>
+  
+  <script>
+    // Pattern selection
+    document.querySelectorAll('.pattern-option').forEach(option => {
+      option.addEventListener('click', () => {
+        // Remove selected from all
+        document.querySelectorAll('.pattern-option').forEach(o => o.classList.remove('selected'));
+        // Add selected to clicked
+        option.classList.add('selected');
+        // Set hidden input
+        document.getElementById('pattern').value = option.dataset.pattern;
+        // Show pattern-specific fields
+        showPatternFields(option.dataset.pattern);
+      });
+    });
+    
+    function showPatternFields(pattern) {
+      // Hide all
+      document.getElementById('cli-wrapper-fields').style.display = 'none';
+      document.getElementById('python-script-fields').style.display = 'none';
+      
+      // Show selected
+      if (pattern === 'cli-wrapper') {
+        document.getElementById('cli-wrapper-fields').style.display = 'block';
+      } else if (pattern === 'python-script') {
+        document.getElementById('python-script-fields').style.display = 'block';
+      }
+    }
+    
+    // Form submission
+    document.getElementById('skill-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Get form data
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Parse examples
+      if (data.examples) {
+        data.examples = data.examples.split('\n').filter(e => e.trim());
+      }
+      
+      // Show loading
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('submit-btn').disabled = true;
+      
+      try {
+        // Call API
+        const response = await fetch('http://localhost:5000/skills/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Generation failed');
+        }
+        
+        // Show result
+        document.getElementById('result-name').textContent = result.preview.name;
+        document.getElementById('result-slug').textContent = result.preview.slug;
+        document.getElementById('result-version').textContent = result.preview.version;
+        document.getElementById('result-pattern').textContent = result.preview.pattern;
+        document.getElementById('download-link').href = `http://localhost:5000/skills/download/${result.skill_id}`;
+        document.getElementById('spec-preview').textContent = result.spec_prompt;
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+        
+      } catch (error) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').textContent = `Error: ${error.message}`;
+        document.getElementById('error').style.display = 'block';
+      } finally {
+        document.getElementById('submit-btn').disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
